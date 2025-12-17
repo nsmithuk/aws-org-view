@@ -2,6 +2,11 @@
 
 A small Python helper library that provides a **high-level, cached view of AWS Organizations**.
 
+It is designed to be **aggressively cache-heavy and lazy by default**:
+
+- Results from AWS Organizations APIs are stored in TTL caches to **minimise repeated API calls**
+- Queries only perform the **minimum number of API calls required** to resolve the specific question being asked (for example, stopping parent traversal as soon as a match is found)
+
 It wraps the low-level AWS Organizations API calls (via `boto3`) to make common “org structure” queries easier, including:
 
 - Checking whether an **account belongs under** a given OU/root (or matches any ID in a “haystack”)
