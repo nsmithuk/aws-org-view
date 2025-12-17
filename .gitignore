@@ -1,3 +1,4 @@
 /.idea
 /tests/my_*
 __pycache__
+/dist
