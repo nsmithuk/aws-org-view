@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aws-org-view"
+dynamic = ["version"]
+description = ''
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Neil Smith", email = "neil@nsmith.net" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "boto3>=1.34,<2.0",
+    "cachetools>=6.0,<7.0",
+    "mypy-boto3-sts>=1.38,<2.0",
+    "mypy-boto3-organizations>=1.38,<2.0"
+]
+
+[project.urls]
+Documentation = "https://github.com/Neil Smith/aws-org-view#readme"
+Issues = "https://github.com/Neil Smith/aws-org-view/issues"
+Source = "https://github.com/Neil Smith/aws-org-view"
+
+[tool.hatch.version]
+path = "src/aws_org_view/__about__.py"
+
+[tool.hatch.envs.dev]
+dependencies = [
+  "ruff",
+  "pytest",
+  "pytest-mock",
+]
+
+[tool.hatch.envs.dev.scripts]
+fmt = [
+  "ruff check --select I --fix .",
+  "ruff format ."
+]
+listbuild = [
+  "tar -tzf dist/*.tar.gz",
+  "unzip -l dist/*.whl"
+]
+
+#[tool.hatch.envs.types]
+#extra-dependencies = [
+#  "mypy>=1.0.0",
+#]
+#[tool.hatch.envs.types.scripts]
+#check = "mypy --install-types --non-interactive {args:src/aws_org_view tests}"
+#
+#[tool.coverage.run]
+#source_pkgs = ["aws_org_view", "tests"]
+#branch = true
+#parallel = true
+#omit = [
+#  "src/aws_org_view/__about__.py",
+#]
+#
+#[tool.coverage.paths]
+#aws_org_view = ["src/aws_org_view", "*/aws-org-view/src/aws_org_view"]
+#tests = ["tests", "*/aws-org-view/tests"]
+#
+#[tool.coverage.report]
+#exclude_lines = [
+#  "no cov",
+#  "if __name__ == .__main__.:",
+#  "if TYPE_CHECKING:",
+#]
