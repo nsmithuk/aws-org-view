@@ -13,14 +13,17 @@ from .client import DefaultOrganizationsClientProvider, OrganizationsClientProvi
 
 
 class ParentResolutionError(RuntimeError):
-    pass
+    """Raised when an AWS Organizations entity cannot be resolved to exactly one parent."""
 
 
 class OUMembershipRetrieverResult(dict):
+    """A convenience wrapper around a nested OU/account hierarchy tree."""
+
     def get_accounts(self) -> list:
-        """
-        Returns all accounts within the OU hierarchy.
-        :return:
+        """Return a flat list of all accounts contained anywhere within the hierarchy.
+
+        This expects the result to contain exactly one root node (the requested parent),
+        then recursively walks all nested organizational units collecting accounts.
         """
         if len(self) != 1:
             raise ValueError("Expected exactly one root in OU membership result")
@@ -28,6 +31,7 @@ class OUMembershipRetrieverResult(dict):
         return self._get_accounts(child)
 
     def _get_accounts(self, unit: dict) -> list:
+        """Recursively traverse a hierarchy node and collect all accounts beneath it."""
         ou_children = unit.get("org_units", {})
         accounts = list(unit.get("accounts", []))
 
@@ -38,12 +42,19 @@ class OUMembershipRetrieverResult(dict):
 
 
 class AwsOrgView:
+    """High-level view over AWS Organizations that adds caching and hierarchy helpers."""
+
     def __init__(
         self,
         client: BaseClient | OrganizationsClientProvider | None = None,
         cache_ttl: int = 3600,
         cache_maxsize: int = 512,
     ):
+        """Create an Organizations view backed by either a boto3 client or a client provider.
+
+        The view stores short-lived results in TTL caches to reduce repeated API calls when
+        walking OU/account relationships and building hierarchy trees.
+        """
         self._client_provider: OrganizationsClientProvider
 
         if client is None:
@@ -77,7 +88,7 @@ class AwsOrgView:
         )
 
     def _get_client(self) -> OrganizationsClient:
-        # TODO: clear cache is session changes?
+        """Return an Organizations client from the configured provider."""
         return self._client_provider.get_client()
 
     # --------------------------------------------------------------------------------
@@ -89,29 +100,11 @@ class AwsOrgView:
         haystack: set[str] | list[str],
         require_direct_descendant: bool = False,
     ) -> bool:
-        """Check if an account belongs to any of the specified OUs or their descendants.
+        """Determine whether an account is within a target set of OUs/roots/accounts.
 
-        This method traverses up the OU hierarchy from the account to the root,
-        checking at each level if the current OU matches any of the target OUs.
-
-        Args:
-            account_id: The AWS account ID to check
-            haystack: Set or list of account IDs or OU IDs to check against. Can include
-                          account IDs, OU IDs (ou-*) and root IDs (r-*).
-            require_direct_descendant: If True, the account_id must be a direct descendant of a matched OU.
-
-        Returns:
-            bool: True if the account is in any of the target OUs or their
-                 descendants, False otherwise
-
-        Note:
-            - The method will traverse up to 6 levels (5 OUs + root) as per AWS
-              Organizations limits
-            - The search stops when:
-                1. A matching OU is found
-                2. The root level is reached
-                3. No parent is found
-                4. Maximum depth is reached
+        This walks upward from an account through its parent chain, checking each
+        encountered identifier against the provided haystack. The search can optionally
+        be constrained to only direct descendants.
         """
         current_id = account_id
 
@@ -140,18 +133,10 @@ class AwsOrgView:
         return False
 
     def _get_parent(self, child_id: str) -> str | None:
-        """Get the parent OU or root ID for a given child ID.
+        """Resolve the single parent (OU/root) identifier for the given child ID.
 
-        Uses a TTL cache to reduce API calls to AWS Organizations.
-
-        Args:
-            child_id: ID of the child account or OU to find parent for
-
-        Returns:
-            str | None: ID of the parent OU or root, None if not found
-
-        Raises:
-            ValueError: If the child has no parent or multiple parents
+        Results are cached to avoid repeated AWS Organizations `list_parents` calls
+        during hierarchy traversal.
         """
         if child_id in self._get_parent_cache:
             return self._get_parent_cache[child_id]
@@ -174,6 +159,11 @@ class AwsOrgView:
     def get_ou_hierarchy(
         self, parent_id: str | None = None, direct_descendants_only: bool = False
     ) -> OUMembershipRetrieverResult:
+        """Build and return a nested representation of OUs and accounts under a parent.
+
+        If no parent is provided, the organization root is used. The returned structure
+        can optionally include only immediate children, or recurse through descendants.
+        """
         if parent_id is None:
             parent_id = self._get_org_root()
             parent_name = "Organization Root"
@@ -192,6 +182,7 @@ class AwsOrgView:
         return OUMembershipRetrieverResult(result)
 
     def _get_org_root(self) -> str:
+        """Return the single organization root ID, using a cached value when available."""
         if "id" in self._get_org_root_cache:
             return self._get_org_root_cache["id"]
 
@@ -205,6 +196,7 @@ class AwsOrgView:
         return ident
 
     def _describe_organizational_unit(self, ou_id: str):
+        """Describe a single organizational unit, caching results to reduce API calls."""
         if ou_id in self._describe_organizational_unit_cache:
             return self._describe_organizational_unit_cache[ou_id]
 
@@ -216,7 +208,7 @@ class AwsOrgView:
     def _build_ou_hierarchy(
         self, parent_id: str, parent_name: str, direct_descendants_only: bool
     ) -> dict:
-        """Recursively build the OU structure."""
+        """Recursively construct a nested OU tree with accounts attached at each node."""
         ou_tree: dict[str, Any] = {"name": parent_name, "accounts": self._list_accounts(parent_id)}
 
         if direct_descendants_only:
@@ -232,7 +224,7 @@ class AwsOrgView:
         return ou_tree
 
     def _list_accounts(self, parent_id: str) -> list[AccountTypeDef]:
-        """List accounts directly under the given parent ID (OU or Root)."""
+        """List all accounts directly under the given parent (OU or root), with caching."""
         if parent_id in self._list_accounts_cache:
             return self._list_accounts_cache[parent_id]
 
@@ -245,7 +237,7 @@ class AwsOrgView:
         return accounts
 
     def _list_child_ous(self, parent_id: str) -> list[OrganizationalUnitTypeDef]:
-        """List immediate child OUs of the given parent."""
+        """List all immediate child OUs for the given parent (OU or root), with caching."""
         if parent_id in self._list_child_ous_cache:
             return self._list_child_ous_cache[parent_id]
 
