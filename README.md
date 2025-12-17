@@ -16,6 +16,18 @@
 pip install aws-org-view
 ```
 
+## Dev
+
+```bash
+hatch env remove dev
+hatch env create dev
+
+```
+
+```hatch run dev:fmt```
+```hatch run dev:pytest```
+```hatch run dev:typing```
+
 ## License
 
 `aws-org-view` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
