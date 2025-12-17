@@ -209,17 +209,15 @@ class AwsOrgView:
         self, parent_id: str, parent_name: str, direct_descendants_only: bool
     ) -> dict:
         """Recursively construct a nested OU tree with accounts attached at each node."""
-        ou_tree: dict[str, Any] = {"name": parent_name, "accounts": self._list_accounts(parent_id)}
-
-        if direct_descendants_only:
-            return ou_tree
-
-        ou_tree["org_units"] = {}
+        ou_tree: dict[str, Any] = {"name": parent_name, "accounts": self._list_accounts(parent_id), "org_units": {}}
 
         child_ous = self._list_child_ous(parent_id)
         for ou in child_ous:
             ou_id = ou["Id"]
-            ou_tree["org_units"][ou_id] = self._build_ou_hierarchy(ou_id, ou["Name"], False)
+            if direct_descendants_only:
+                ou_tree["org_units"][ou_id] = {"name": ou["Name"]}
+            else:
+                ou_tree["org_units"][ou_id] = self._build_ou_hierarchy(ou_id, ou["Name"], False)
 
         return ou_tree
 
