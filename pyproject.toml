@@ -32,9 +32,9 @@ dependencies = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/Neil Smith/aws-org-view#readme"
-Issues = "https://github.com/Neil Smith/aws-org-view/issues"
-Source = "https://github.com/Neil Smith/aws-org-view"
+Documentation = "https://github.com/nsmithuk/aws-org-view#readme"
+Issues = "https://github.com/nsmithuk/aws-org-view/issues"
+Source = "https://github.com/nsmithuk/aws-org-view"
 
 [tool.hatch.version]
 path = "src/aws_org_view/__about__.py"
