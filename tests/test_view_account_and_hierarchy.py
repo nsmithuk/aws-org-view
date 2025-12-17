@@ -2,16 +2,16 @@ import pytest
 
 from aws_org_view import OUMembershipRetrieverResult
 
-
 # --------------------------------------------------------------------------------------
 # account_in_haystack tests
+
 
 @pytest.mark.parametrize(
     "haystack",
     [
-        ["ou-a"],            # list input
-        {"ou-a"},            # set input
-        ["ou-a", "ou-x"],    # list with extras
+        ["ou-a"],  # list input
+        {"ou-a"},  # set input
+        ["ou-a", "ou-x"],  # list with extras
     ],
 )
 def test_account_in_haystack_accepts_list_or_set(view, haystack):
@@ -63,14 +63,19 @@ def test_account_in_haystack_calls_list_parents_only_as_needed(view, org_client)
     assert org_client.list_parents_calls == [{"ChildId": "111111111111"}]
 
 
-def test_account_in_haystack_direct_descendant_only_makes_at_most_one_parent_lookup(view, org_client):
+def test_account_in_haystack_direct_descendant_only_makes_at_most_one_parent_lookup(
+    view, org_client
+):
     org_client.list_parents_calls.clear()
 
-    assert view.account_in_haystack(
-        "111111111111",
-        {"r-root"},
-        require_direct_descendant=True,
-    ) is False
+    assert (
+        view.account_in_haystack(
+            "111111111111",
+            {"r-root"},
+            require_direct_descendant=True,
+        )
+        is False
+    )
 
     # It will resolve the parent once (account -> parent) then stop.
     assert org_client.list_parents_calls == [{"ChildId": "111111111111"}]
@@ -88,6 +93,7 @@ def test_account_in_haystack_uses_cache_on_repeated_calls(view, org_client):
 
 # --------------------------------------------------------------------------------------
 # get_ou_hierarchy tests
+
 
 def test_get_ou_hierarchy_returns_ou_membership_result(view, org_client):
     org_client.accounts_pages_by_parent["r-root"] = [{"Accounts": []}]
@@ -144,7 +150,9 @@ def test_get_ou_hierarchy_builds_recursive_tree_with_accounts_and_child_ous(view
 
     # Children
     org_client.accounts_pages_by_parent["ou-a"] = [{"Accounts": [{"Id": "A2"}]}]
-    org_client.ous_pages_by_parent["ou-a"] = [{"OrganizationalUnits": [{"Id": "ou-c", "Name": "OU-C"}]}]
+    org_client.ous_pages_by_parent["ou-a"] = [
+        {"OrganizationalUnits": [{"Id": "ou-c", "Name": "OU-C"}]}
+    ]
 
     org_client.accounts_pages_by_parent["ou-b"] = [{"Accounts": []}]
     org_client.ous_pages_by_parent["ou-b"] = [{"OrganizationalUnits": []}]
@@ -176,7 +184,9 @@ def test_get_ou_hierarchy_builds_recursive_tree_with_accounts_and_child_ous(view
     assert ou_b["org_units"] == {}
 
 
-def test_get_ou_hierarchy_direct_descendants_only_includes_accounts_and_shallow_child_ous(view, org_client):
+def test_get_ou_hierarchy_direct_descendants_only_includes_accounts_and_shallow_child_ous(
+    view, org_client
+):
     org_client.accounts_pages_by_parent["r-root"] = [{"Accounts": [{"Id": "A1"}]}]
     org_client.ous_pages_by_parent["r-root"] = [
         {"OrganizationalUnits": [{"Id": "ou-a", "Name": "OU-A"}]}
@@ -184,7 +194,9 @@ def test_get_ou_hierarchy_direct_descendants_only_includes_accounts_and_shallow_
 
     # Even if ou-a has data, direct_descendants_only=True should prevent recursing into it.
     org_client.accounts_pages_by_parent["ou-a"] = [{"Accounts": [{"Id": "A2"}]}]
-    org_client.ous_pages_by_parent["ou-a"] = [{"OrganizationalUnits": [{"Id": "ou-c", "Name": "OU-C"}]}]
+    org_client.ous_pages_by_parent["ou-a"] = [
+        {"OrganizationalUnits": [{"Id": "ou-c", "Name": "OU-C"}]}
+    ]
 
     result = view.get_ou_hierarchy(parent_id="r-root", direct_descendants_only=True)
 
@@ -199,11 +211,12 @@ def test_get_ou_hierarchy_direct_descendants_only_includes_accounts_and_shallow_
     assert "org_units" not in root["org_units"]["ou-a"]
 
 
-
 def test_get_ou_hierarchy_get_accounts_flattening_matches_tree(view, org_client):
     # Small 2-level tree
     org_client.accounts_pages_by_parent["r-root"] = [{"Accounts": [{"Id": "A1"}]}]
-    org_client.ous_pages_by_parent["r-root"] = [{"OrganizationalUnits": [{"Id": "ou-a", "Name": "OU-A"}]}]
+    org_client.ous_pages_by_parent["r-root"] = [
+        {"OrganizationalUnits": [{"Id": "ou-a", "Name": "OU-A"}]}
+    ]
 
     org_client.accounts_pages_by_parent["ou-a"] = [{"Accounts": [{"Id": "A2"}]}]
     org_client.ous_pages_by_parent["ou-a"] = [{"OrganizationalUnits": []}]
@@ -219,7 +232,9 @@ def test_get_ou_hierarchy_uses_account_and_ou_caches(view, org_client):
     so the fake client should only have requested each paginator once per parent.
     """
     org_client.accounts_pages_by_parent["r-root"] = [{"Accounts": []}]
-    org_client.ous_pages_by_parent["r-root"] = [{"OrganizationalUnits": [{"Id": "ou-a", "Name": "OU-A"}]}]
+    org_client.ous_pages_by_parent["r-root"] = [
+        {"OrganizationalUnits": [{"Id": "ou-a", "Name": "OU-A"}]}
+    ]
 
     org_client.accounts_pages_by_parent["ou-a"] = [{"Accounts": []}]
     org_client.ous_pages_by_parent["ou-a"] = [{"OrganizationalUnits": []}]

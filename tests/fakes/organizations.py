@@ -22,9 +22,7 @@ class FakeOrganizationsClient:
         }
     )
     ou_details_by_id: dict[str, dict[str, Any]] = field(
-        default_factory=lambda: {
-            "ou-a": {"OrganizationalUnit": {"Id": "ou-a", "Name": "OU-A"}}
-        }
+        default_factory=lambda: {"ou-a": {"OrganizationalUnit": {"Id": "ou-a", "Name": "OU-A"}}}
     )
     accounts_pages_by_parent: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     ous_pages_by_parent: dict[str, list[dict[str, Any]]] = field(default_factory=dict)

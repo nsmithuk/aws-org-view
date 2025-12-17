@@ -1,5 +1,6 @@
 from aws_org_view import OUMembershipRetrieverResult
 
+
 def test_ou_membership_result_get_accounts_flattens():
     result = OUMembershipRetrieverResult(
         {

@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: MIT
 from .client import DefaultOrganizationsClientProvider, OrganizationsClientProvider
-from .query import AwsOrgView, ParentResolutionError, OUMembershipRetrieverResult
+from .query import AwsOrgView, OUMembershipRetrieverResult, ParentResolutionError
 
 __all__ = [
     "OrganizationsClientProvider",
     "DefaultOrganizationsClientProvider",
     "AwsOrgView",
     "ParentResolutionError",
-    "OUMembershipRetrieverResult"
+    "OUMembershipRetrieverResult",
 ]
